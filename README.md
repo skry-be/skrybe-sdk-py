@@ -1,6 +1,6 @@
 # Skrybe SDK for Django (Python)
 
-A Python package providing a Django-compatible SDK for the Skrybe API, inspired by the official PHP and TypeScript SDKs.
+A Python package providing a Django-compatible SDK for the Skrybe API.
 
 ## Features
 - Send emails and create campaigns via Skrybe API
