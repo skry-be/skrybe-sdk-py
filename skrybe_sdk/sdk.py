@@ -47,6 +47,30 @@ class SkrybeSDK:
         except requests.RequestException as e:
             raise SkrybeException(str(e)) from e
 
+    def _make_json_request(self, endpoint, data):
+        self._handle_rate_limit()
+        url = self.base_url + endpoint
+        payload = {"api_key": self.api_key}
+        for key, value in data.items():
+            if value is not None:
+                payload[key] = value
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "SkrybeSDK-Python/1.0"
+                }
+            )
+            response.raise_for_status()
+            try:
+                return response.json()
+            except Exception:
+                return response.text
+        except requests.RequestException as e:
+            raise SkrybeException(str(e)) from e
+
     def _validate_email_options(self, options):
         required = ['fromName', 'fromEmail', 'subject', 'htmlText']
         errors = []
@@ -73,6 +97,23 @@ class SkrybeSDK:
         if errors:
             raise ValidationException(errors)
 
+    def _validate_transactional_options(self, options):
+        errors = []
+        if not options.get('toEmail'):
+            errors.append("Field 'toEmail' is required")
+        if not options.get('subject'):
+            errors.append("Field 'subject' is required")
+        if not options.get('htmlBody') and not options.get('plainBody'):
+            errors.append("Either 'htmlBody' or 'plainBody' is required")
+        if options.get('toEmail') and '@' not in options['toEmail']:
+            errors.append("Field 'toEmail' has invalid email format")
+        if options.get('fromEmail') and '@' not in options['fromEmail']:
+            errors.append("Field 'fromEmail' has invalid email format")
+        if options.get('replyTo') and '@' not in options['replyTo']:
+            errors.append("Field 'replyTo' has invalid email format")
+        if errors:
+            raise ValidationException(errors)
+
     def send_email(self, options):
         self._validate_email_options(options)
         return self._make_request('/api/emails/send.php', {
@@ -90,6 +131,36 @@ class SkrybeSDK:
             'track_clicks': options.get('trackClicks'),
             'schedule_date_time': options.get('scheduleDateTime'),
             'schedule_timezone': options.get('scheduleTimezone'),
+        })
+
+    def send_transactional(self, options):
+        """
+        Send a transactional email (OTP, password reset, alerts, etc.).
+
+        Unlike send_email, this delivers immediately without queuing or scheduling.
+
+        Args:
+            options: dict with the following keys:
+                - toEmail (required): Recipient email address (single email only)
+                - subject (required): Email subject
+                - htmlBody: HTML version of the email (required if plainBody not provided)
+                - plainBody: Plain text version (required if htmlBody not provided)
+                - fromName (optional): Override brand's 'From name'
+                - fromEmail (optional): Override brand's 'From email'
+                - replyTo (optional): Override brand's 'Reply to' email
+
+        Returns:
+            dict: API response with 'status' and 'message' keys
+        """
+        self._validate_transactional_options(options)
+        return self._make_json_request('/api/emails/send-transactional.php', {
+            'to_email': options['toEmail'],
+            'subject': options['subject'],
+            'html_body': options.get('htmlBody'),
+            'plain_body': options.get('plainBody'),
+            'from_name': options.get('fromName'),
+            'from_email': options.get('fromEmail'),
+            'reply_to': options.get('replyTo'),
         })
 
     def create_campaign(self, options):
