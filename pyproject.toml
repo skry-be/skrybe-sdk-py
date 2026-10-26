@@ -1,17 +1,50 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "skrybe-sdk-django"
-version = "0.1.0"
-description = "A Django-compatible SDK for Skrybe"
-authors = [
-    { name="Your Name", email="your@email.com" }
-]
+name = "skrybe-sdk"
+dynamic = ["version"]
+description = "Official Python SDK for the Skrybe email marketing API"
 readme = "README.md"
-license = { file="LICENSE" }
-requires-python = ">=3.7"
-dependencies = [
-    "requests>=2.25"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Skrybe" }]
+requires-python = ">=3.9"
+dependencies = ["requests>=2.25"]
+keywords = ["skrybe", "email", "marketing", "newsletter", "api", "sdk"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Typing :: Typed",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://skry.be"
+Source = "https://github.com/skry-be/skrybe-sdk-py"
+Issues = "https://github.com/skry-be/skrybe-sdk-py/issues"
+Changelog = "https://github.com/skry-be/skrybe-sdk-py/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = { attr = "skrybe._version.VERSION" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+skrybe = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
