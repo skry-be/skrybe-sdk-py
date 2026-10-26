@@ -52,7 +52,9 @@ See "Upgrading from 0.x" in the README.
   whatever the response body was.
 - `campaigns.create()` takes `send=True` instead of `sendCampaign`, and id
   lists as Python lists.
-- Requires Python 3.9 or newer (was 3.7).
+- Requires Python 3.10 or newer (was 3.7): pip 26.2.2, the first release
+  without the compromised eMudhra/emSign CAs, does not support 3.9, which is
+  end-of-life.
 
 ### Removed
 - `ValidationException` and the client-side `@` checks on addresses; missing
@@ -74,6 +76,12 @@ See "Upgrading from 0.x" in the README.
 - `send_transactional()` was missing from the 0.1.0 release on PyPI.
 - The package metadata named a nonexistent `skrybe-sdk-django` project and a
   placeholder author; build artifacts are no longer committed.
+
+### Security
+- Require certifi 2026.10.19 or newer, which drops the eMudhra/emSign root
+  CAs whose keys were compromised (python.org advisory, 2026-10-20). Also
+  upgrade pip to 26.2.2 or newer: pip trusts its own vendored certifi
+  regardless of the system trust store.
 
 ## [0.1.0] - 2025-05-29
 

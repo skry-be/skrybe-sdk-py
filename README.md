@@ -17,7 +17,9 @@ autoresponders.
 
 ## Requirements
 
-Python 3.9 or newer.
+Python 3.10 or newer. The SDK requires certifi 2026.10.19 or newer, which drops
+the compromised eMudhra/emSign CAs; upgrade pip to 26.2.2 or newer as well
+(python.org advisory, 2026-10-20).
 
 ## Install
 

@@ -40,6 +40,9 @@ jobs:
       - name: The tag is on main
         run: |
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      # pip < 26.2.2 trusts the compromised eMudhra/emSign CAs through its vendored
+      # certifi (python.org advisory, 2026-10-20). The wheel is pinned by hash.
+      - run: python -m pip install 'pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70'
       - run: python -m pip install build twine pytest
       - run: pip install . && python -m pytest -q
       - run: python -m build
@@ -60,7 +63,8 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      # v1.14.3: certifi 2026.10.19 and sigstore 4.5.1 (eMudhra/emSign advisory).
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
 
   github-release:
     needs: publish

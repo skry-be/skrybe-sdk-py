@@ -21,10 +21,10 @@ def test_pyproject_reads_the_version_from_the_package():
     assert 'version = { attr = "skrybe._version.VERSION" }' in pyproject
 
 
-def test_requests_is_the_only_runtime_dependency():
+def test_runtime_dependencies_are_requests_and_certifi():
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     deps = re.search(r"^dependencies = \[(.*?)\]", pyproject, re.MULTILINE | re.DOTALL)
-    assert deps and re.findall(r'"([a-zA-Z0-9_.-]+)', deps.group(1)) == ["requests"]
+    assert deps and re.findall(r'"([a-zA-Z0-9_.-]+)', deps.group(1)) == ["requests", "certifi"]
 
 
 def test_ships_a_py_typed_marker():
