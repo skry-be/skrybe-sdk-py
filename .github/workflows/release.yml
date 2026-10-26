@@ -1,0 +1,82 @@
+name: Release
+
+# Publishes skrybe-sdk to PyPI when a vX.Y.Z tag is pushed, then opens a GitHub
+# Release with that version's CHANGELOG.md section.
+#
+#   git tag -a v2.1.0 -m v2.1.0 <merge commit on main>
+#   git push origin v2.1.0
+#
+# Bump src/skrybe/_version.py and add a dated CHANGELOG.md section in the PR
+# first; the tag must match the version or nothing is published.
+#
+# Uses PyPI trusted publishing: the runner proves its identity over OIDC, so
+# there is no PyPI token in this repository. The trusted publisher on pypi.org
+# names this repository, this workflow file and the `pypi` environment, so keep
+# the file name.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The tag matches the package version
+        run: |
+          version=$(python -c 'import re; print(re.search(r"VERSION = \"(.+)\"", open("src/skrybe/_version.py").read())[1])')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the package version $version." >&2
+            exit 1
+          fi
+      - name: The tag is on main
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      # pip < 26.2.2 trusts the compromised eMudhra/emSign CAs through its vendored
+      # certifi (python.org advisory, 2026-10-20). The wheel is pinned by hash.
+      - run: python -m pip install 'pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70'
+      - run: python -m pip install build twine pytest
+      - run: pip install . && python -m pytest -q
+      - run: python -m build
+      - run: python -m twine check --strict dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      # v1.14.3: certifi 2026.10.19 and sigstore 4.5.1 (eMudhra/emSign advisory).
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the GitHub Release from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
